@@ -1,0 +1,31 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="citizenconstruction"
+version="${mod_version}"
+displayName="Citizen Construction"
+authors="Ishawakiii"
+description='''Sélection d'une zone sur la carte 3D Citizen Map, demande de construction à Claude, puis construction en direct dans le monde, sans redémarrer le serveur. Mod serveur uniquement.'''
+
+[[dependencies.citizenconstruction]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.215,)"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.citizenconstruction]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.citizenconstruction]]
+modId="citizenmap"
+type="required"
+versionRange="[1.0.0,)"
+ordering="AFTER"
+side="SERVER"
