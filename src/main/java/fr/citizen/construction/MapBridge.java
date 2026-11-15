@@ -10,7 +10,7 @@ import java.lang.reflect.Method;
  * les deux mods se compilent séparément, seuls des types Java standard passent entre eux.
  */
 public final class MapBridge {
-    private static Method addContext, addScript, isAdmin, markArea, publicUrl;
+    private static Method addContext, addScript, isAdmin, markArea, markAreaWorld, publicUrl;
     private static boolean ok;
 
     private MapBridge() {}
@@ -24,6 +24,8 @@ public final class MapBridge {
             isAdmin = api.getMethod("isAdmin", HttpExchange.class);
             markArea = api.getMethod("markAreaDirty", int.class, int.class, int.class, int.class);
             publicUrl = api.getMethod("publicUrl");
+            try { markAreaWorld = api.getMethod("markAreaDirty", String.class, int.class, int.class, int.class, int.class); }
+            catch (NoSuchMethodException old) { markAreaWorld = null; } // ancienne version de Citizen Map
             ok = true;
         } catch (Throwable t) {
             CitizenConstruction.LOG.error("[CitizenConstruction] Citizen Map introuvable : installe citizenmap sur le serveur.", t);
@@ -50,6 +52,14 @@ public final class MapBridge {
     public static void markAreaDirty(int x0, int z0, int x1, int z1) {
         if (!ok) return;
         try { markArea.invoke(null, x0, z0, x1, z1); } catch (Throwable ignored) {}
+    }
+
+    public static void markAreaDirty(String world, int x0, int z0, int x1, int z1) {
+        if (!ok) return;
+        try {
+            if (markAreaWorld != null) markAreaWorld.invoke(null, world, x0, z0, x1, z1);
+            else markArea.invoke(null, x0, z0, x1, z1);
+        } catch (Throwable ignored) {}
     }
 
     public static String publicUrl() {

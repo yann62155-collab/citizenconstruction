@@ -85,7 +85,22 @@ public class CitizenConstruction {
     }
 
     private static void onTick(ServerTickEvent.Post e) {
-        if (builder != null && level != null) builder.tick(level);
+        if (builder != null && server != null) builder.tick();
+    }
+
+    /** Monde d'une demande (si le monde n'existe plus : null). */
+    public static ServerLevel levelFor(Demande d) {
+        MinecraftServer s = server;
+        if (s == null) return null;
+        if (d.monde == null || d.monde.isBlank()) return level;
+        try { return s.getLevel(ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(d.monde))); }
+        catch (Exception e) { return null; }
+    }
+
+    private static ServerLevel requireLevel(Demande d) {
+        ServerLevel l = levelFor(d);
+        if (l == null) throw new IllegalStateException("le monde « " + d.monde + " » n'est pas chargé sur le serveur");
+        return l;
     }
 
     // ------------------------------------------------------------------ demandes
@@ -101,11 +116,13 @@ public class CitizenConstruction {
         int water = 0, trees = 0;
         Map<String, Integer> counts = new HashMap<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        boolean ceiling = l.dimensionType().hasCeiling();
         for (int z = az; z <= bz; z++) {
             for (int x = ax; x <= bx; x++) {
                 LevelChunk c = l.getChunk(x >> 4, z >> 4);
                 int ground = c.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15);
                 int top = c.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15);
+                if (ceiling) { ground = groundUnderCeiling(l, c, x, z, p); top = ground; }
                 p.set(x, ground, z);
                 BlockState s = c.getBlockState(p);
                 if (s.getFluidState().is(FluidTags.WATER)) water++;
@@ -124,10 +141,19 @@ public class CitizenConstruction {
         for (int i = 0; i < Math.min(8, top.size()); i++) d.blocsSurface.put(top.get(i).getKey(), top.get(i).getValue());
     }
 
+    /** Nether et mondes à plafond : premier sol solide sous le plafond de bedrock. */
+    private static int groundUnderCeiling(ServerLevel l, LevelChunk c, int x, int z, BlockPos.MutableBlockPos p) {
+        int min = l.getMinBuildHeight();
+        int y = min + l.dimensionType().logicalHeight() - 1;
+        while (y > min) { p.set(x, y, z); if (c.getBlockState(p).isAir()) break; y--; }
+        while (y > min) { p.set(x, y, z); BlockState s = c.getBlockState(p); if (!s.isAir() && s.blocksMotion()) break; y--; }
+        return y;
+    }
+
     /** Plan reçu (GitHub ou import sur le site) : validation sur le thread serveur. Renvoie null si OK, sinon l'erreur. */
     public static String receivePlan(Demande d, String json, String sha, String source) {
-        ServerLevel l = level;
-        if (l == null) return "serveur non prêt";
+        ServerLevel l = levelFor(d);
+        if (l == null) return "le monde « " + d.monde + " » n'est pas chargé sur le serveur";
         if (builder.busyWith(d.id)) return "cette demande est en cours de construction";
         Plan plan;
         try {
@@ -166,7 +192,7 @@ public class CitizenConstruction {
     public static Plan plan(Demande d) throws Exception {
         Plan p = PLANS.get(d.id);
         if (p != null) return p;
-        p = Plan.compile(store.readPlan(d.id), level, d, ConstructionConfig.maxBlocks);
+        p = Plan.compile(store.readPlan(d.id), requireLevel(d), d, ConstructionConfig.maxBlocks);
         PLANS.put(d.id, p);
         return p;
     }
@@ -175,7 +201,7 @@ public class CitizenConstruction {
         try {
             if (builder.busyWith(d.id)) return "déjà en cours";
             if (d.planBlocs <= 0) return "pas encore de plan pour " + d.id;
-            builder.startBuild(level, d, plan(d));
+            builder.startBuild(requireLevel(d), d, plan(d));
             notifyOps("Construction de " + d.id + " (" + d.titre + ") lancée.");
             return null;
         } catch (Exception ex) {
@@ -186,7 +212,7 @@ public class CitizenConstruction {
     public static String undo(Demande d) {
         try {
             if (builder.busyWith(d.id)) return "déjà en cours";
-            builder.startUndo(level, d);
+            builder.startUndo(requireLevel(d), d);
             return null;
         } catch (Exception ex) {
             return ex.getMessage();
@@ -208,6 +234,7 @@ public class CitizenConstruction {
         StringBuilder sb = new StringBuilder();
         sb.append("DEMANDE DE CONSTRUCTION ").append(d.id).append(" — serveur Citizen\n");
         sb.append("Titre : ").append(d.titre).append('\n');
+        sb.append("Monde : ").append(d.monde).append('\n');
         sb.append("Ce que je veux : ").append(d.description).append("\n\n");
         sb.append("Zone sélectionnée : X ").append(d.x0).append(" → ").append(d.x1)
                 .append(", Z ").append(d.z0).append(" → ").append(d.z1)

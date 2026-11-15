@@ -2,14 +2,14 @@
 
 Sélectionne une zone sur la **carte 3D** (mod [Citizen Map](https://github.com/yann62155-collab/citizenmap)),
 décris ce que tu veux, **Claude dessine le plan**, et le mod le **construit en direct dans le monde, sans redémarrer le serveur**.
-Mod **serveur uniquement**. Nécessite `citizenmap`.
+Fonctionne dans **tous les mondes** du serveur. Mod **serveur uniquement**. Nécessite `citizenmap` 1.1.0 ou plus.
 
 ## Installation
 1. Mets `citizenmap-x.x.x.jar` **et** `citizenconstruction-x.x.x.jar` (Releases) dans `mods/` du serveur, redémarre une fois.
 2. Ouvre la carte, panneau **Administration** → mot de passe (`/carte motdepasse` en jeu).
 
 ## Utilisation
-1. Panneau **Constructions** → **Sélectionner une zone** → clique-glisse sur la carte (clic droit = tourner la vue).
+1. Choisis le monde dans le menu **Monde** (principal, Nether, End, mondes Citizen Mondes…), puis panneau **Constructions** → **Sélectionner une zone** → clique-glisse sur la carte (clic droit = tourner la vue).
 2. Règle la hauteur, donne un titre, décris ce que tu veux → **Envoyer la demande à Claude**.
 3. Claude répond avec un plan :
    - **pont automatique** (si `github.token` est rempli) : la demande part dans `demandes/C-0001.json`, Claude dépose

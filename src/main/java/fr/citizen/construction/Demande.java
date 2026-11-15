@@ -15,6 +15,8 @@ public class Demande {
     public static final String ERREUR = "erreur";
 
     public String id;
+    /** Monde de la construction (ex : minecraft:overworld, minecraft:the_nether, citizenmondes:capitale). */
+    public String monde = "minecraft:overworld";
     public String titre = "";
     public String description = "";
     public int x0, z0, x1, z1;
@@ -51,7 +53,7 @@ public class Demande {
     /** Copie légère pour les listes (sans la grille de hauteurs). */
     public Demande leger() {
         Demande d = new Demande();
-        d.id = id; d.titre = titre; d.description = description; d.x0 = x0; d.z0 = z0; d.x1 = x1; d.z1 = z1;
+        d.id = id; d.monde = monde; d.titre = titre; d.description = description; d.x0 = x0; d.z0 = z0; d.x1 = x1; d.z1 = z1;
         d.yMin = yMin; d.yMax = yMax; d.auteur = auteur; d.creeLe = creeLe; d.majLe = majLe; d.statut = statut;
         d.message = message; d.solMin = solMin; d.solMax = solMax; d.solMoyen = solMoyen; d.colonnesEau = colonnesEau;
         d.colonnesArbres = colonnesArbres; d.blocsSurface = blocsSurface; d.hauteurs = null;

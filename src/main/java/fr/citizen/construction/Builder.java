@@ -21,6 +21,7 @@ public final class Builder {
 
     public static final class Job {
         final Demande d;
+        final ServerLevel level;
         final Plan plan;        // construction
         final UndoData restore; // ou annulation
         final UndoData record;  // instantané pris pendant la construction
@@ -30,8 +31,8 @@ public final class Builder {
         int lastMark;
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
 
-        Job(Demande d, Plan plan, UndoData restore, UndoData record) {
-            this.d = d; this.plan = plan; this.restore = restore; this.record = record;
+        Job(ServerLevel level, Demande d, Plan plan, UndoData restore, UndoData record) {
+            this.level = level; this.d = d; this.plan = plan; this.restore = restore; this.record = record;
         }
 
         int total() { return plan != null ? plan.size() : restore.size(); }
@@ -62,7 +63,7 @@ public final class Builder {
         } else {
             rec = new UndoData();
         }
-        Job j = new Job(d, plan, null, rec);
+        Job j = new Job(level, d, plan, null, rec);
         d.total = plan.size();
         d.progression = 0;
         store.update(d, Demande.EN_CONSTRUCTION, current == null ? "Construction en cours…" : "En file d'attente…");
@@ -72,7 +73,7 @@ public final class Builder {
     public synchronized void startUndo(ServerLevel level, Demande d) throws Exception {
         if (!Files.exists(store.undoFile(d.id))) throw new IllegalStateException("aucun instantané du terrain pour " + d.id);
         UndoData u = UndoData.load(store.undoFile(d.id), level);
-        Job j = new Job(d, null, u, null);
+        Job j = new Job(level, d, null, u, null);
         d.total = u.size();
         d.progression = 0;
         store.update(d, Demande.ANNULATION, "Remise du terrain d'origine…");
@@ -96,13 +97,14 @@ public final class Builder {
         store.update(j.d, Demande.INTERROMPUE, reason);
     }
 
-    public synchronized void tick(ServerLevel level) {
+    public synchronized void tick() {
         if (current == null) {
             current = queue.poll();
             if (current == null) return;
             store.update(current.d, null, current.isUndo() ? "Remise du terrain d'origine…" : "Construction en cours…");
         }
         Job j = current;
+        ServerLevel level = j.level;
         int budget = ConstructionConfig.blocksPerTick;
         try {
             if (j.phase == 0) {
@@ -192,6 +194,6 @@ public final class Builder {
 
     private static void markMap(Job j) {
         if (j.minX == Integer.MAX_VALUE) return;
-        MapBridge.markAreaDirty(j.minX, j.minZ, j.maxX, j.maxZ);
+        MapBridge.markAreaDirty(j.d.monde, j.minX, j.minZ, j.maxX, j.maxZ);
     }
 }

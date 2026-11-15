@@ -150,6 +150,8 @@ public final class ConstructionWeb {
         d.x1 = in.get("x1").getAsInt(); d.z1 = in.get("z1").getAsInt();
         int hauteur = in.has("hauteur") ? in.get("hauteur").getAsInt() : 24;
         d.auteur = str(in, "auteur", "admin carte");
+        d.monde = str(in, "monde", "minecraft:overworld");
+        if (CitizenConstruction.levelFor(d) == null) throw new IllegalArgumentException("Monde inconnu : " + d.monde);
         int w = Math.abs(d.x1 - d.x0) + 1, l = Math.abs(d.z1 - d.z0) + 1;
         if (w > ConstructionConfig.maxSize || l > ConstructionConfig.maxSize)
             throw new IllegalArgumentException("Zone trop grande (max " + ConstructionConfig.maxSize + " × " + ConstructionConfig.maxSize + ")");
@@ -157,9 +159,10 @@ public final class ConstructionWeb {
         hauteur = Math.max(4, Math.min(ConstructionConfig.maxHeight, hauteur));
         int h = hauteur;
         onServer(() -> {
-            CitizenConstruction.survey(CitizenConstruction.level(), d);
-            d.yMin = Math.max(CitizenConstruction.level().getMinBuildHeight(), d.solMin - 6);
-            d.yMax = Math.min(CitizenConstruction.level().getMaxBuildHeight() - 1, d.solMax + h);
+            net.minecraft.server.level.ServerLevel lv = CitizenConstruction.levelFor(d);
+            CitizenConstruction.survey(lv, d);
+            d.yMin = Math.max(lv.getMinBuildHeight(), d.solMin - 6);
+            d.yMax = Math.min(lv.getMaxBuildHeight() - 1, d.solMax + h);
             return null;
         });
         CitizenConstruction.store().create(d);

@@ -26,6 +26,6 @@ side="SERVER"
 [[dependencies.citizenconstruction]]
 modId="citizenmap"
 type="required"
-versionRange="[1.0.0,)"
+versionRange="[1.1.0,)"
 ordering="AFTER"
 side="SERVER"

@@ -26,7 +26,7 @@ public final class ConstructionCommand {
                 .then(Commands.literal("liste").executes(c -> {
                     DemandeStore st = CitizenConstruction.store();
                     if (st == null || st.all().isEmpty()) { say(c, "Aucune demande. Sélectionne une zone sur la carte : /carte"); return 1; }
-                    for (Demande dm : st.all()) say(c, dm.id + " · " + dm.titre + " · " + dm.statut
+                    for (Demande dm : st.all()) say(c, dm.id + " · " + dm.titre + " · " + dm.statut + " · " + dm.monde
                             + " · X " + dm.x0 + "→" + dm.x1 + " Z " + dm.z0 + "→" + dm.z1 + (dm.planBlocs > 0 ? " · " + dm.planBlocs + " blocs" : ""));
                     return 1;
                 }))

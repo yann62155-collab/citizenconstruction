@@ -153,6 +153,7 @@ export default function (CM) {
     const data = {
       titre: f.titre.value.trim(), description: f.description.value.trim(),
       x0: +f.x0.value, z0: +f.z0.value, x1: +f.x1.value, z1: +f.z1.value, hauteur: +f.hauteur.value,
+      monde: CM.monde ? CM.monde() : 'minecraft:overworld',
     };
     if (!data.description) { CM.toast('Décris ce que tu veux construire', 'erreur'); return; }
     f.querySelector('button[type=submit]').disabled = true;
@@ -218,7 +219,7 @@ export default function (CM) {
       ${sel ? '<button id="btnEffacer">Effacer</button>' : ''}</div>`;
     if (sel) {
       html += `<form id="fDemande" class="corps" style="padding:0;gap:5px">
-        <div class="ligne muted">Zone : <span id="taille"></span></div>
+        <div class="ligne muted">Monde : ${escapeHtml(CM.mondeNom ? CM.mondeNom(CM.monde()) : '')} · Zone : <span id="taille"></span></div>
         <div class="ligne"><label>X <input name="x0" type="number" style="width:70px"></label><label>Z <input name="z0" type="number" style="width:70px"></label></div>
         <div class="ligne"><label>X <input name="x1" type="number" style="width:70px"></label><label>Z <input name="z1" type="number" style="width:70px"></label></div>
         <label class="ligne">Hauteur max au-dessus du sol <input id="cHauteur" name="hauteur" type="number" min="4" max="${state.config.hauteurMax}" value="${sel.hauteur || 24}" style="width:70px"></label>
@@ -237,7 +238,7 @@ export default function (CM) {
       html += `<div class="joueur" style="flex-direction:column;align-items:stretch;border-color:#4a3c22" data-id="${escapeHtml(d.id)}">
         <div class="ligne" style="justify-content:space-between"><span class="nom">${escapeHtml(d.id)} · ${escapeHtml(d.titre || 'Sans titre')}</span>
           <span style="color:${color};font-size:12px">● ${label}</span></div>
-        <div class="pos">X ${d.x0}→${d.x1} · Z ${d.z0}→${d.z1} · Y ${d.yMin}→${d.yMax}${d.planBlocs ? ` · ${d.planBlocs.toLocaleString('fr-FR')} blocs` : ''}</div>
+        <div class="pos">${CM.mondeNom ? escapeHtml(CM.mondeNom(d.monde || 'minecraft:overworld')) + ' · ' : ''}X ${d.x0}→${d.x1} · Z ${d.z0}→${d.z1} · Y ${d.yMin}→${d.yMax}${d.planBlocs ? ` · ${d.planBlocs.toLocaleString('fr-FR')} blocs` : ''}</div>
         ${d.message ? `<div class="muted">${escapeHtml(d.message)}</div>` : ''}
         <div class="ligne">
           <button data-a="voir">Voir</button>
@@ -270,10 +271,17 @@ export default function (CM) {
       const id = el.dataset.id, d = state.demandes.find(x => x.id === id);
       el.querySelectorAll('button[data-a]').forEach(b => b.onclick = async () => {
         switch (b.dataset.a) {
-          case 'voir': showFocus(d); CM.goto((d.x0 + d.x1) / 2, (d.z0 + d.z1) / 2, d.solMoyen, Math.max(60, (d.x1 - d.x0) * 1.6)); break;
+          case 'voir':
+            if (CM.setMonde && d.monde && d.monde !== CM.monde()) CM.setMonde(d.monde, { x: (d.x0 + d.x1) / 2, y: d.solMoyen, z: (d.z0 + d.z1) / 2 });
+            showFocus(d);
+            CM.goto((d.x0 + d.x1) / 2, (d.z0 + d.z1) / 2, d.solMoyen, Math.max(60, (d.x1 - d.x0) * 1.6));
+            break;
           case 'copier': copyForClaude(id); break;
           case 'importer': importPlan(id); break;
-          case 'apercu': togglePreview(id); break;
+          case 'apercu':
+            if (CM.setMonde && d.monde && d.monde !== CM.monde()) CM.setMonde(d.monde, { x: (d.x0 + d.x1) / 2, y: d.solMoyen, z: (d.z0 + d.z1) / 2 });
+            togglePreview(id);
+            break;
           case 'construire': if (previewFor === id) togglePreview(id); post('construire', id); break;
           case 'annuler': if (confirm(`Remettre le terrain de ${id} exactement comme avant la construction ?`)) post('annuler', id); break;
           case 'supprimer': if (confirm(`Supprimer la demande ${id} ? (le bâtiment reste en place)`)) post('supprimer', id); break;
@@ -302,6 +310,13 @@ export default function (CM) {
   }
 
   CM.on('login', () => { lastSig = ''; refresh(); });
+  // changement de monde : on efface ce qui appartient à l'ancien monde
+  CM.on('monde', () => {
+    if (selecting) stopSelecting();
+    sel = null; drag = null; drawSelection(); showFocus(null);
+    if (previewMesh) { CM.overlays.remove(previewMesh); previewMesh.geometry.dispose(); previewMesh.material.dispose(); previewMesh = null; previewFor = null; }
+    lastSig = ''; render();
+  });
   render();
   refresh();
   setInterval(refresh, 1500);
