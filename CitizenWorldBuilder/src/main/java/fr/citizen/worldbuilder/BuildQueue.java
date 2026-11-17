@@ -9,7 +9,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 public final class BuildQueue {
-    private record Placement(BlockPos pos, BlockState state) {}
+    record Placement(BlockPos pos, BlockState state) {}
     private static final Queue<Placement> QUEUE=new ArrayDeque<>();
     private static Level level;
     private static long placed;
